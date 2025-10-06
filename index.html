@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistente Conversacional</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px 10px; min-height: 100vh; margin: 0; background-color: #f0f0f0; }
+        h1 { font-size: 1.8em; text-align: center; width: 100%; }
+        button { padding: 18px 25px; font-size: 1.1em; cursor: pointer; border-radius: 10px; border: none; background-color: #007bff; color: white; margin: 5px; width: 90%; max-width: 400px; }
+        #botonGoogle { background-color: #4285F4; }
+        #resultado { margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; background-color: white; min-height: 60px; width: 90%; max-width: 400px; text-align: center; white-space: pre-line; font-size: 1em; overflow-y: auto; max-height: 200px; }
+        .hidden { display: none; }
+        #confirmation-box { border: 2px solid #007bff; background-color: #e7f3ff; padding: 15px; border-radius: 10px; margin-top: 15px; width: 90%; max-width: 400px; }
+        #confirmation-box p { margin: 0 0 10px 0; text-align: center; }
+        #confirmation-box button { margin: 0 5px; }
+        #confirm-btn { background-color: #28a745; }
+        #cancel-btn { background-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <h1>Asistente Conversacional</h1>
+    <div id="auth-section">
+        <p>Para acceder a tu calendario, inicia sesión:</p>
+        <div id="botonGoogle"><button id="googleLoginBtn">Iniciar sesión con Google Calendar</button></div>
+    </div>
+    <div id="app-section" class="hidden">
+        <button id="botonHablar">🎤 Hablar</button>
+        <div id="resultado">Di algo...</div>
+        <div id="confirmation-box" class="hidden">
+            <p id="proposal-text"></p>
+            <button id="confirm-btn">✅ Confirmar</button>
+            <button id="cancel-btn">❌ Cancelar</button>
+        </div>
+    </div>
+
+<!-- El script va al final del body -->
+<script>
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) { alert('Tu navegador no soporta la API de voz. Prueba en Chrome.'); }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "es-ES";
+    recognition.interimResults = false;
+
+    const botonHablar = document.getElementById('botonHablar');
+    const resultado = document.getElementById('resultado');
+    const authSection = document.getElementById('auth-section');
+    const appSection = document.getElementById('app-section');
+    const confirmationBox = document.getElementById('confirmation-box');
+    const proposalText = document.getElementById('proposal-text');
+    const confirmBtn = document.getElementById('confirm-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+
+    // ¡IMPORTANTE! Pega aquí tus credenciales
+    const GOOGLE_CLIENT_ID = 'TU_ID_DE_CLIENTE_DE_GOOGLE_AQUI';
+    const BACKEND_URL = 'https://tu-proyecto-en-vercel.vercel.app'; // <-- ¡IMPORTANTE! Cambia esto más tarde.
+    let accessToken = '';
+    let lastProposal = null;
+    let isProcessing = false;
+    let conversationHistory = [];
+
+    // --- Lógica de Google Sign-In ---
+    function iniciarSesionConGoogle() {
+        const client = google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email',
+            callback: async (tokenResponse) => {
+                accessToken = tokenResponse.access_token;
+                const res = await fetch(`${BACKEND_URL}/api/procesar-ia`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'login', token: tokenResponse.access_token })
+                });
+                const data = await res.json();
+                if (data.message) {
+                    authSection.classList.add('hidden');
+                    appSection.classList.remove('hidden');
+                    resultado.textContent = `¡Hola! ¿En qué puedo ayudarte hoy?`;
+                    addToConversation('Asistente', `Hola! ¿En qué puedo ayudarte hoy?`);
+                    startListeningLoop();
+                } else {
+                    resultado.textContent = 'Error al iniciar sesión con Google Calendar: ' + data.error;
+                }
+            }
+        });
+        client.requestAccessToken();
+    }
+
+    window.onload = () => {
+        document.getElementById('googleLoginBtn').onclick = iniciarSesionConGoogle;
+    };
+    
+    // --- Lógica de Conversación ---
+    const addToConversation = (speaker, text) => {
+        conversationHistory.push({ speaker, text });
+        updateConversationUI();
+    };
+
+    const updateConversationUI = () => {
+        const conversationText = conversationHistory.map(item => `${item.speaker}: ${item.text}`).join('\n');
+        resultado.textContent = conversationText;
+        resultado.scrollTop = resultado.scrollHeight;
+    };
+
+    const startListeningLoop = () => {
+        if (isProcessing) return;
+        isProcessing = true;
+        recognition.start();
+        botonHablar.textContent = '🔴 Escuchando...';
+    };
+
+    recognition.onresult = async (event) => {
+        const transcript = event.results[0][0].transcript;
+        addToConversation('Tú', transcript);
+        
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/procesar-ia`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'converse', history: conversationHistory })
+            });
+            const data = await response.json();
+            
+            addToConversation('Asistente', data.response);
+            
+            if (data.proposal) {
+                showConfirmationBox(data.proposal);
+            } else {
+                startListeningLoop();
+            }
+
+        } catch (error) {
+            console.error('Error en la conversación:', error);
+            addToConversation('Asistente', 'Error al procesar la solicitud. Revisa la consola.');
+            startListeningLoop();
+        }
+    };
+
+    recognition.onerror = (event) => {
+        console.error('Error de voz:', event.error);
+        addToConversation('Asistente', `Error de voz: ${event.error}`);
+        startListeningLoop();
+    };
+
+    recognition.onend = () => {
+        console.log('Reconocimiento de voz finalizado.');
+        if (!isProcessing) {
+            startListeningLoop();
+        }
+    };
+
+    // --- Lógica del Botón de Hablar ---
+    botonHablar.addEventListener('click', () => {
+        if (!accessToken) {
+            resultado.textContent = 'Por favor, inicia sesión con Google antes de usar el asistente de voz.';
+            return;
+        }
+        startListeningLoop();
+    });
+
+    // --- Lógica de Confirmación ---
+    const showConfirmationBox = (proposal) => {
+        proposalText.textContent = `Voy a ${proposal.intent} el evento: "${proposal.summary}" el ${new Date(proposal.start_datetime).toLocaleString('es-ES')}. ¿Confirmo?`;
+        confirmationBox.classList.remove('hidden');
+        lastProposal = proposal;
+    };
+
+    confirmBtn.onclick = async () => {
+        if (!lastProposal) return;
+        resultado.textContent = 'Ejecutando acción...';
+        confirmationBox.classList.add('hidden');
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/procesar-ia`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'execute', proposal: lastProposal, token: accessToken })
+            });
+            const data = await response.json();
+            addToConversation('Asistente', `Perfecto. He ${data.message.toLowerCase()}. ¿Hay algo más en lo que pueda ayudarte?`);
+            confirmationBox.classList.add('hidden');
+            lastProposal = null;
+        } catch (error) {
+            console.error('Error al ejecutar acción:', error);
+            addToConversation('Asistente', 'Error al ejecutar la acción. Revisa la consola.');
+            confirmationBox.classList.add('hidden');
+            lastProposal = null;
+        }
+    };
+
+    cancelBtn.onclick = () => {
+        confirmationBox.classList.add('hidden');
+        addToConversation('Asistente', 'Acción cancelada.');
+        lastProposal = null;
+    };
+</script>
+
+</body>
+</html>
