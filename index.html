@@ -7,17 +7,77 @@
     <link rel="manifest" href="manifest.json">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px 10px; min-height: 100vh; margin: 0; background-color: #f0f0f0; }
-        h1 { font-size: 1.8em; text-align: center; width: 100%; }
-        button { padding: 18px 25px; font-size: 1.1em; cursor: pointer; border-radius: 10px; border: none; background-color: #007bff; color: white; margin: 5px; width: 90%; max-width: 400px; }
-        #botonGoogle { background-color: #4285F4; }
-        #resultado { margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 5px; background-color: white; min-height: 60px; width: 90%; max-width: 400px; text-align: center; white-space: pre-line; font-size: 1em; overflow-y: auto; max-height: 200px; }
-        .hidden { display: none; }
-        #confirmation-box { border: 2px solid #007bff; background-color: #e7f3ff; padding: 15px; border-radius: 10px; margin-top: 15px; width: 90%; max-width: 400px; }
-        #confirmation-box p { margin: 0 0 10px 0; text-align: center; }
-        #confirmation-box button { margin: 0 5px; }
-        #confirm-btn { background-color: #28a745; }
-        #cancel-btn { background-color: #dc3545; }
+        body { 
+            font-family: sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: flex-start; 
+            padding: 20px 10px; 
+            min-height: 100vh; 
+            margin: 0; 
+            background-color: #f0f0f0; 
+        }
+        h1 { 
+            font-size: 1.8em; 
+            text-align: center; 
+            width: 100%; 
+        }
+        button { 
+            padding: 18px 25px; 
+            font-size: 1.1em; 
+            cursor: pointer; 
+            border-radius: 10px; 
+            border: none; 
+            background-color: #007bff; 
+            color: white; 
+            margin: 5px; 
+            width: 90%; 
+            max-width: 400px; 
+        }
+        #botonGoogle { 
+            background-color: #4285F4; 
+        }
+        #resultado { 
+            margin-top: 20px; 
+            padding: 15px; 
+            border: 1px solid #ccc; 
+            border-radius: 5px; 
+            background-color: white; 
+            min-height: 60px; 
+            width: 90%; 
+            max-width: 400px; 
+            text-align: center; 
+            white-space: pre-line; 
+            font-size: 1em; 
+            overflow-y: auto; 
+            max-height: 200px; 
+        }
+        .hidden { 
+            display: none; 
+        }
+        #confirmation-box { 
+            border: 2px solid #007bff; 
+            background-color: #e7f3ff; 
+            padding: 15px; 
+            border-radius: 10px; 
+            margin-top: 15px; 
+            width: 90%; 
+            max-width: 400px; 
+        }
+        #confirmation-box p { 
+            margin: 0 0 10px 0; 
+            text-align: center; 
+        }
+        #confirmation-box button { 
+            margin: 0 5px; 
+        }
+        #confirm-btn { 
+            background-color: #28a745; 
+        }
+        #cancel-btn { 
+            background-color: #dc3545; 
+        }
     </style>
 </head>
 <body>
@@ -56,7 +116,7 @@
 
     // ¡IMPORTANTE! Pega aquí tus credenciales
     const GOOGLE_CLIENT_ID = 'TU_ID_DE_CLIENTE_DE_GOOGLE_AQUI';
-    const BACKEND_URL = 'https://tu-proyecto-en-vercel.vercel.app'; // <-- ¡IMPORTANTE! Cambia esto más tarde.
+    const BACKEND_URL = 'https://tu-proyecto-en-vercel.vercel.app';
     let accessToken = '';
     let lastProposal = null;
     let isProcessing = false;
@@ -78,7 +138,7 @@
                     authSection.classList.add('hidden');
                     appSection.classList.remove('hidden');
                     resultado.textContent = `¡Hola! ¿En qué puedo ayudarte hoy?`;
-                    addToConversation('Asistente', `Hola! ¿En qué puedo ayudarte hoy?`);
+                    addToConversation('Asistente', `¡Hola! ¿En qué puedo ayudarte hoy?`);
                     startListeningLoop();
                 } else {
                     resultado.textContent = 'Error al iniciar sesión con Google Calendar: ' + data.error;
