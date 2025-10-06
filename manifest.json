@@ -1,7 +1,7 @@
 {
   "name": "Asistente Conversacional",
   "short_name": "Asistente IA",
-  "description": "Un asistente de voz conversacional para gestionar tu calendario.",
+  "description": "Un asistente de voz para gestionar tu calendario con IA.",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#f0f0f0",
@@ -19,6 +19,7 @@
       "src": "icon-512.png",
       "type": "image/png",
       "sizes": "512x512",
+      "### **¡IMPORTANTE!** Pega aquí tus credenciales.
       "purpose": "any maskable"
     }
   ]
