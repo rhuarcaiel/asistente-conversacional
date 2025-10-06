@@ -7,21 +7,14 @@ export default async function (req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido' });
 
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Método no permitido' });
-    }
-
-    // --- LECTURA DEL CUERPO DE LA PETICIÓN ---
+    // --- LECTURA DEL CUERPO DE LA PETICIÓN (MÁS ROBUSTA) ---
     let body;
     try {
         const chunks = [];
-        for await (const chunk of req) {
-            chunks.push(chunk);
-        }
+        for await (const chunk of req) chunks.push(chunk);
         body = JSON.parse(Buffer.concat(chunks).toString());
     } catch (e) {
         console.error('Error al parsear el cuerpo de la petición:', e);
@@ -33,9 +26,7 @@ export default async function (req, res) {
     // --- CASO 1: LOGIN ---
     if (body.action === 'login' && body.token) {
         try {
-            const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                headers: { Authorization: `Bearer ${body.token}` }
-            });
+            const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${body.token}` } });
             if (!userInfoResponse.ok) throw new Error('Token inválido');
             const userInfo = await userInfoResponse.json();
             return res.status(200).json({ message: 'Login correcto', user: userInfo.email });
@@ -62,9 +53,9 @@ export default async function (req, res) {
             
             let proposal = null;
             try {
-                const jsonMatch = aiResponse.match(/```json\n([\s\S]*?)\n```);
+                const jsonMatch = aiResponse.match(/```json\n([\s\S]*?)\n/);
                 if (jsonMatch) {
-                    proposal = JSON.parse(jsonMatch[1]);
+                    proposal = JSON.parse(jsonMatch<source_id data="1" title="N/A" />);
                 }
             } catch (e) { /* No es una propuesta */ }
             
@@ -79,6 +70,7 @@ export default async function (req, res) {
     // --- CASO 3: EJECUCIÓN DE LA ACCIÓN ---
     if (body.action === 'execute' && body.proposal && body.token) {
         const proposal = body.proposal; const token = body.token;
+
         if (proposal.intent === 'create') {
             try {
                 const event = {
@@ -88,14 +80,9 @@ export default async function (req, res) {
                 };
                 if (proposal.is_recurring && proposal.recurrence) {
                     let rrule = `RRULE:FREQ=${proposal.recurrence.frequency}`;
-                    if (proposal.recurrence.day_of_week) {
-                        rrule += `;BYDAY=${proposal.recurrence.day_of_week.slice(0, 2).toUpperCase()}`;
-                    }
-                    event.recurrence = [rrule];
+                    if (proposal.recurrence.day_of_week) rrule += `;BYDAY=${proposal.recurrence.day_of_week.slice(0, 2).toUpperCase()}`; event.recurrence = [rrule];
                 }
-                const calendarResponse = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
-                    method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(event)
-                });
+                const calendarResponse = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(event) });
                 if (!calendarResponse.ok) {
                     const errorBody = await calendarResponse.text();
                     return res.status(500).json({ success: false, error: `Error de Google Calendar: ${calendarResponse.status}. Detalles: ${errorBody}` });
