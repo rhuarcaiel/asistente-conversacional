@@ -115,16 +115,15 @@
     const confirmBtn = document.getElementById('confirm-btn');
     const cancelBtn = document.getElementById('cancel-btn');
 
-    // ¡IMPORTANTE! Pega aquí tus credenciales!
-    const GOOGLE_CLIENT_ID = '730540890311-2n0tj0q7f5dp3v8j6h16n1rmkjqt8m98.apps.googleusercontent.com';
-    const BACKEND_URL = 'https://asistente-conversacional.vercel.app'; // <-- ¡Cambia esto si usas otro dominio!
+    // ¡IMPORTANTE! Pega aquí tu Client ID de Google
+    const GOOGLE_CLIENT_ID = 'TU_ID_DE_CLIENTE_DE_GOOGLE_AQUI';
+    const BACKEND_URL = 'https://asistente-conversacional.vercel.app'; // ← Actualiza tras desplegar
 
     let accessToken = '';
     let lastProposal = null;
     let isProcessing = false;
     let conversationHistory = [];
 
-    // --- Lógica de Google Sign-In ---
     function iniciarSesionConGoogle() {
       const client = google.accounts.oauth2.initTokenClient({
         client_id: GOOGLE_CLIENT_ID,
@@ -132,12 +131,12 @@
         callback: async (tokenResponse) => {
           accessToken = tokenResponse.access_token;
           try {
-            const res = await fetch(`${BACKEND_URL}/api/procesar-ia`, {
+            const response = await fetch(`${BACKEND_URL}/api/procesar-ia`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ action: 'login', token: tokenResponse.access_token })
             });
-            const data = await res.json();
+            const data = await response.json();
             if (data.message) {
               authSection.classList.add('hidden');
               appSection.classList.remove('hidden');
@@ -160,7 +159,6 @@
       document.getElementById('googleLoginBtn').onclick = iniciarSesionConGoogle;
     };
 
-    // --- Lógica de Conversación ---
     const addToConversation = (speaker, text) => {
       conversationHistory.push({ speaker, text });
       updateConversationUI();
@@ -190,7 +188,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'converse', history: conversationHistory })
         });
-        const data = await response.json(); // ← Aquí estaba el error: "res" no existía
+        const data = await response.json(); // ← CORREGIDO: era "res"
         addToConversation('Asistente', data.response);
         if (data.proposal) {
           showConfirmationBox(data.proposal);
@@ -217,7 +215,6 @@
       }
     };
 
-    // --- Lógica de Confirmación ---
     const showConfirmationBox = (proposal) => {
       const start = new Date(proposal.start_datetime);
       proposalText.textContent = `Voy a ${proposal.intent === 'create' ? 'crear' : 'eliminar'} el evento: "${proposal.summary}" el ${start.toLocaleString('es-ES')}. ¿Confirmo?`;
@@ -236,7 +233,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'execute', proposal: lastProposal, token: accessToken })
         });
-        const data = await response.json(); // ← Corregido: era "res"
+        const data = await response.json(); // ← CORREGIDO
         addToConversation('Asistente', `Perfecto. He ${data.message.toLowerCase()}. ¿Hay algo más en lo que pueda ayudarte?`);
         lastProposal = null;
         startListeningLoop();
