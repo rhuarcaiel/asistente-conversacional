@@ -1,9 +1,10 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/procesar-ia.js", "use": "@vercel/node" }
+    { "src": "api/**/*.js", "use": "@vercel/node" }
   ],
   "routes": [
-    { "src": "/api/procesar-ia", "dest": "api/procesar-ia.js" }
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)", "dest": "/$1" }
   ]
 }
