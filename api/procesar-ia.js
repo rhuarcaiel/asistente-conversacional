@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -16,14 +16,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Método no permitido.' });
   }
 
-  // Parsear cuerpo
+  // Parsear cuerpo - En Vercel ya viene parseado, no es necesario hacerlo manualmente
   let body;
   try {
-    const chunks = [];
-    for await (const chunk of req) {
-      chunks.push(chunk);
-    }
-    body = JSON.parse(Buffer.concat(chunks).toString());
+    body = req.body;
   } catch (error) {
     return res.status(400).json({ error: 'JSON inválido.' });
   }
