@@ -116,7 +116,7 @@
     const cancelBtn = document.getElementById('cancel-btn');
 
     // ¡IMPORTANTE! Pega aquí tu Client ID de Google
-    const GOOGLE_CLIENT_ID = '730540890311-2n0tj0q7f5dp3v8j6h16n1rmkjqt8m98.apps.googleusercontent.com';
+    const GOOGLE_CLIENT_ID = 'TU_ID_DE_CLIENTE_DE_GOOGLE_AQUI';
     const BACKEND_URL = 'https://asistente-conversacional.vercel.app'; // ← Actualiza tras desplegar
 
     let accessToken = '';
@@ -188,7 +188,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'converse', history: conversationHistory })
         });
-        const data = await response.json(); // ← CORREGIDO: era "res"
+        const data = await response.json();
         addToConversation('Asistente', data.response);
         if (data.proposal) {
           showConfirmationBox(data.proposal);
@@ -233,7 +233,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'execute', proposal: lastProposal, token: accessToken })
         });
-        const data = await response.json(); // ← CORREGIDO
+        const data = await response.json();
         addToConversation('Asistente', `Perfecto. He ${data.message.toLowerCase()}. ¿Hay algo más en lo que pueda ayudarte?`);
         lastProposal = null;
         startListeningLoop();
@@ -254,4 +254,3 @@
   </script>
 </body>
 </html>
-
